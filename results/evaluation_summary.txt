@@ -1,0 +1,24 @@
+Maternal health risk triage
+Ranks follow-up priority. Not a diagnosis.
+
+Train / test rows: 811 / 203
+Shipped model: baseline
+Selection metric: cross-validated weighted F1 (target >= 0.8)
+
+Baseline cross-validation 0.8172 +/- 0.0184
+Searched cross-validation 0.8082 +/- 0.0125
+
+Holdout of the shipped model (not used for selection)
+  accuracy:           0.8670
+  precision weighted: 0.8720
+  recall weighted:    0.8670
+  f1 weighted:        0.8679
+  f1 macro:           0.8742
+
+Feature influence on the shipped forest
+  BS: 0.3520
+  SystolicBP: 0.1894
+  Age: 0.1610
+  DiastolicBP: 0.1280
+  HeartRate: 0.1032
+  BodyTemp: 0.0664

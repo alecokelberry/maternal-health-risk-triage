@@ -1,0 +1,43 @@
+{
+  "features": [
+    "Age",
+    "SystolicBP",
+    "DiastolicBP",
+    "BS",
+    "BodyTemp",
+    "HeartRate"
+  ],
+  "labels": [
+    "high risk",
+    "low risk",
+    "mid risk"
+  ],
+  "chosen_model": "baseline",
+  "training_ranges": {
+    "Age": {
+      "min": 10.0,
+      "max": 70.0
+    },
+    "SystolicBP": {
+      "min": 70.0,
+      "max": 160.0
+    },
+    "DiastolicBP": {
+      "min": 49.0,
+      "max": 100.0
+    },
+    "BS": {
+      "min": 6.0,
+      "max": 19.0
+    },
+    "BodyTemp": {
+      "min": 98.0,
+      "max": 103.0
+    },
+    "HeartRate": {
+      "min": 7.0,
+      "max": 90.0
+    }
+  },
+  "random_state": 42
+}

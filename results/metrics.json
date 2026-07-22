@@ -1,0 +1,312 @@
+{
+  "dataset": {
+    "name": "Maternal Health Risk",
+    "source": "UCI Machine Learning Repository ID 863",
+    "doi": "10.24432/C5DP5D",
+    "license": "CC BY 4.0"
+  },
+  "disclaimer": "A care-coordination demo. It ranks follow-up priority from routine vitals. It is not a diagnostic device and it does not recommend treatment.",
+  "random_state": 42,
+  "test_size": 0.2,
+  "n_train": 811,
+  "n_test": 203,
+  "features": [
+    "Age",
+    "SystolicBP",
+    "DiastolicBP",
+    "BS",
+    "BodyTemp",
+    "HeartRate"
+  ],
+  "target": "RiskLevel",
+  "success_target": {
+    "metric": "weighted_f1",
+    "threshold": 0.8
+  },
+  "model_selection": "The shipped model is whichever of the baseline and the search had the higher cross-validated weighted F1. Holdout scores are reported after that choice.",
+  "chosen_model": "baseline",
+  "preprocess": {
+    "raw_rows": 1014,
+    "missing_before": {
+      "Age": 0,
+      "SystolicBP": 0,
+      "DiastolicBP": 0,
+      "BS": 0,
+      "BodyTemp": 0,
+      "HeartRate": 0,
+      "RiskLevel": 0
+    },
+    "rows_after_cleaning": 1014,
+    "class_counts": {
+      "low risk": 406,
+      "mid risk": 336,
+      "high risk": 272
+    },
+    "labels": [
+      "high risk",
+      "low risk",
+      "mid risk"
+    ]
+  },
+  "baseline_cv": {
+    "n_folds": 5,
+    "scoring": "f1_weighted",
+    "scores": [
+      0.8296664106663575,
+      0.7969908382887735,
+      0.7925485008818342,
+      0.8346410689031947,
+      0.8320200786867453
+    ],
+    "mean": 0.817173379485381,
+    "std": 0.018413799685312218
+  },
+  "baseline_holdout": {
+    "tag": "baseline_holdout",
+    "accuracy": 0.8669950738916257,
+    "precision_weighted": 0.8720174361553672,
+    "recall_weighted": 0.8669950738916257,
+    "f1_weighted": 0.8679315455550294,
+    "f1_macro": 0.8742142506811611,
+    "classification_report": {
+      "high risk": {
+        "precision": 0.9629629629629629,
+        "recall": 0.9454545454545454,
+        "f1-score": 0.9541284403669725,
+        "support": 55.0
+      },
+      "low risk": {
+        "precision": 0.8918918918918919,
+        "recall": 0.8148148148148148,
+        "f1-score": 0.8516129032258064,
+        "support": 81.0
+      },
+      "mid risk": {
+        "precision": 0.7733333333333333,
+        "recall": 0.8656716417910447,
+        "f1-score": 0.8169014084507042,
+        "support": 67.0
+      },
+      "accuracy": 0.8669950738916257,
+      "macro avg": {
+        "precision": 0.8760627293960628,
+        "recall": 0.8753136673534683,
+        "f1-score": 0.8742142506811611,
+        "support": 203.0
+      },
+      "weighted avg": {
+        "precision": 0.8720174361553672,
+        "recall": 0.8669950738916257,
+        "f1-score": 0.8679315455550294,
+        "support": 203.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        52,
+        1,
+        2
+      ],
+      [
+        0,
+        66,
+        15
+      ],
+      [
+        2,
+        7,
+        58
+      ]
+    ],
+    "class_labels": [
+      "high risk",
+      "low risk",
+      "mid risk"
+    ],
+    "meets_target_weighted_f1_ge_0_80": true
+  },
+  "tuning": {
+    "search": "RandomizedSearchCV",
+    "n_iter": 24,
+    "scoring": "f1_weighted",
+    "cv_folds": 5,
+    "best_params": {
+      "n_estimators": 200,
+      "min_samples_split": 4,
+      "min_samples_leaf": 1,
+      "max_features": "log2",
+      "max_depth": 16,
+      "class_weight": "balanced_subsample"
+    },
+    "best_cv_score_weighted_f1": 0.8081566608534073,
+    "best_fold_scores": [
+      0.8110468556949503,
+      0.8089727610049204,
+      0.7848699401034345,
+      0.822639100875751,
+      0.8132546465879799
+    ]
+  },
+  "tuned_cv": {
+    "n_folds": 5,
+    "scoring": "f1_weighted",
+    "scores": [
+      0.8110468556949503,
+      0.8089727610049204,
+      0.7848699401034345,
+      0.822639100875751,
+      0.8132546465879799
+    ],
+    "mean": 0.8081566608534073,
+    "std": 0.012546084142211736
+  },
+  "tuned_holdout": {
+    "tag": "tuned_holdout",
+    "accuracy": 0.8472906403940886,
+    "precision_weighted": 0.8495525664054075,
+    "recall_weighted": 0.8472906403940886,
+    "f1_weighted": 0.8480646790529411,
+    "f1_macro": 0.8556419384214765,
+    "classification_report": {
+      "high risk": {
+        "precision": 0.9629629629629629,
+        "recall": 0.9454545454545454,
+        "f1-score": 0.9541284403669725,
+        "support": 55.0
+      },
+      "low risk": {
+        "precision": 0.8461538461538461,
+        "recall": 0.8148148148148148,
+        "f1-score": 0.8301886792452831,
+        "support": 81.0
+      },
+      "mid risk": {
+        "precision": 0.7605633802816901,
+        "recall": 0.8059701492537313,
+        "f1-score": 0.782608695652174,
+        "support": 67.0
+      },
+      "accuracy": 0.8472906403940886,
+      "macro avg": {
+        "precision": 0.8565600631328331,
+        "recall": 0.8554131698410306,
+        "f1-score": 0.8556419384214765,
+        "support": 203.0
+      },
+      "weighted avg": {
+        "precision": 0.8495525664054075,
+        "recall": 0.8472906403940886,
+        "f1-score": 0.8480646790529411,
+        "support": 203.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        52,
+        1,
+        2
+      ],
+      [
+        0,
+        66,
+        15
+      ],
+      [
+        2,
+        11,
+        54
+      ]
+    ],
+    "class_labels": [
+      "high risk",
+      "low risk",
+      "mid risk"
+    ],
+    "meets_target_weighted_f1_ge_0_80": true
+  },
+  "chosen_cv": {
+    "n_folds": 5,
+    "scoring": "f1_weighted",
+    "scores": [
+      0.8296664106663575,
+      0.7969908382887735,
+      0.7925485008818342,
+      0.8346410689031947,
+      0.8320200786867453
+    ],
+    "mean": 0.817173379485381,
+    "std": 0.018413799685312218
+  },
+  "chosen_holdout": {
+    "tag": "baseline_holdout",
+    "accuracy": 0.8669950738916257,
+    "precision_weighted": 0.8720174361553672,
+    "recall_weighted": 0.8669950738916257,
+    "f1_weighted": 0.8679315455550294,
+    "f1_macro": 0.8742142506811611,
+    "classification_report": {
+      "high risk": {
+        "precision": 0.9629629629629629,
+        "recall": 0.9454545454545454,
+        "f1-score": 0.9541284403669725,
+        "support": 55.0
+      },
+      "low risk": {
+        "precision": 0.8918918918918919,
+        "recall": 0.8148148148148148,
+        "f1-score": 0.8516129032258064,
+        "support": 81.0
+      },
+      "mid risk": {
+        "precision": 0.7733333333333333,
+        "recall": 0.8656716417910447,
+        "f1-score": 0.8169014084507042,
+        "support": 67.0
+      },
+      "accuracy": 0.8669950738916257,
+      "macro avg": {
+        "precision": 0.8760627293960628,
+        "recall": 0.8753136673534683,
+        "f1-score": 0.8742142506811611,
+        "support": 203.0
+      },
+      "weighted avg": {
+        "precision": 0.8720174361553672,
+        "recall": 0.8669950738916257,
+        "f1-score": 0.8679315455550294,
+        "support": 203.0
+      }
+    },
+    "confusion_matrix": [
+      [
+        52,
+        1,
+        2
+      ],
+      [
+        0,
+        66,
+        15
+      ],
+      [
+        2,
+        7,
+        58
+      ]
+    ],
+    "class_labels": [
+      "high risk",
+      "low risk",
+      "mid risk"
+    ],
+    "meets_target_weighted_f1_ge_0_80": true
+  },
+  "feature_importances": {
+    "BS": 0.3520451979545217,
+    "SystolicBP": 0.18935292608022036,
+    "Age": 0.1610357102792641,
+    "DiastolicBP": 0.12800734424206528,
+    "HeartRate": 0.10320705167132803,
+    "BodyTemp": 0.0663517697726004
+  }
+}
