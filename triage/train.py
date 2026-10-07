@@ -1,16 +1,20 @@
-"""Fit a baseline forest and a searched forest. Keep the one that wins cross-validation."""
+"""Fit a baseline forest and a searched forest; keep the cross-validation winner."""
 
 from __future__ import annotations
 
 import json
-import statistics
 import sys
+from pathlib import Path
+from typing import Any
 
 import joblib
+import sklearn
 
 from triage.data import (
     FEATURE_COLS,
     MODELS_DIR,
+    PLAUSIBLE_RANGES,
+    PROCESSED_DIR,
     RANDOM_STATE,
     RAW_CSV,
     RESULTS_DIR,
@@ -27,97 +31,52 @@ from triage.model import (
     cross_validate,
     holdout_metrics,
     importances,
+    majority_baseline,
     make_forest,
     tune,
 )
 
+MODEL_FILE = "random_forest.joblib"
+ENCODER_FILE = "label_encoder.joblib"
+METADATA_FILE = "metadata.json"
 
-def run() -> int:
-    if not RAW_CSV.exists():
-        print(f"Missing raw CSV at {RAW_CSV}", file=sys.stderr)
+
+def run(
+    raw_csv: Path = RAW_CSV,
+    models_dir: Path = MODELS_DIR,
+    results_dir: Path = RESULTS_DIR,
+    processed_dir: Path = PROCESSED_DIR,
+) -> int:
+    if not raw_csv.exists():
+        print(f"error: missing raw CSV at {raw_csv}", file=sys.stderr)
         return 1
 
-    raw = load_raw()
-    processed, encoder, notes = preprocess(raw)
+    processed, encoder, notes = preprocess(load_raw(raw_csv))
     x_train, x_test, y_train, y_test = split(processed)
-    write_tables(processed, x_train, x_test, y_train, y_test, encoder)
+    write_tables(processed, x_train, x_test, y_train, y_test, encoder, processed_dir)
     class_names = [str(label) for label in encoder.classes_]
 
     baseline = make_forest()
     baseline_cv = cross_validate(make_forest(), x_train, y_train)
     baseline.fit(x_train, y_train)
-    baseline_holdout = holdout_metrics(
-        baseline, x_test, y_test, class_names, "baseline_holdout"
-    )
+    tuned, tuning = tune(x_train, y_train)
 
-    tuned, tune_info = tune(x_train, y_train)
-    tuned_cv = {
-        "n_folds": tune_info["cv_folds"],
-        "scoring": "f1_weighted",
-        "scores": tune_info["best_fold_scores"],
-        "mean": tune_info["best_cv_score_weighted_f1"],
-        "std": statistics.pstdev(tune_info["best_fold_scores"]),
-    }
-    tuned_holdout = holdout_metrics(tuned, x_test, y_test, class_names, "tuned_holdout")
-
-    # The holdout scores above are reported. They are not used to pick a winner.
-    if baseline_cv["mean"] >= tuned_cv["mean"]:
-        chosen = baseline
-        chosen_name = "baseline"
-        chosen_holdout = baseline_holdout
-        chosen_cv = baseline_cv
+    # Choose on cross-validation only. Holdout scores are computed after.
+    if baseline_cv["mean"] >= tuning["cv"]["mean"]:
+        chosen_name, chosen, chosen_cv = "baseline", baseline, baseline_cv
     else:
-        chosen = tuned
-        chosen_name = "tuned"
-        chosen_holdout = tuned_holdout
-        chosen_cv = tuned_cv
+        chosen_name, chosen, chosen_cv = "tuned", tuned, tuning["cv"]
+    holdout = holdout_metrics(chosen, x_test, y_test, class_names)
 
-    weights = importances(chosen)
-    ranges = training_ranges(x_train)
-    _save(
-        model=chosen,
-        encoder=encoder,
-        chosen_name=chosen_name,
-        notes=notes,
-        baseline_cv=baseline_cv,
-        baseline_holdout=baseline_holdout,
-        tune_info=tune_info,
-        tuned_cv=tuned_cv,
-        tuned_holdout=tuned_holdout,
-        chosen_cv=chosen_cv,
-        chosen_holdout=chosen_holdout,
-        weights=weights,
-        ranges=ranges,
-        n_train=len(x_train),
-        n_test=len(x_test),
-    )
-    print(
-        f"Shipped {chosen_name} model. "
-        f"Cross-validated weighted F1 {chosen_cv['mean']:.4f}. "
-        f"Holdout weighted F1 {chosen_holdout['f1_weighted']:.4f}."
-    )
-    return 0
-
-
-def _save(**details) -> None:
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    model = details["model"]
-    encoder = details["encoder"]
-    joblib.dump(model, MODELS_DIR / "random_forest.joblib")
-    joblib.dump(encoder, MODELS_DIR / "label_encoder.joblib")
     metadata = {
         "features": FEATURE_COLS,
-        "labels": [str(label) for label in encoder.classes_],
-        "chosen_model": details["chosen_name"],
-        "training_ranges": details["ranges"],
+        "labels": class_names,
+        "chosen_model": chosen_name,
+        "training_ranges": training_ranges(x_train),
         "random_state": RANDOM_STATE,
+        "sklearn_version": sklearn.__version__,
     }
-    (MODELS_DIR / "metadata.json").write_text(
-        json.dumps(metadata, indent=2), encoding="utf-8"
-    )
-
-    payload = {
+    metrics = {
         "dataset": {
             "name": "Maternal Health Risk",
             "source": "UCI Machine Learning Repository ID 863",
@@ -125,66 +84,103 @@ def _save(**details) -> None:
             "license": "CC BY 4.0",
         },
         "disclaimer": (
-            "A care-coordination demo. It ranks follow-up priority from routine "
-            "vitals. It is not a diagnostic device and it does not recommend treatment."
+            "A portfolio demo. It is not a diagnostic device and does not "
+            "recommend treatment."
         ),
         "random_state": RANDOM_STATE,
         "test_size": TEST_SIZE,
-        "n_train": details["n_train"],
-        "n_test": details["n_test"],
+        "n_train": len(x_train),
+        "n_test": len(x_test),
         "features": FEATURE_COLS,
         "target": TARGET_COL,
+        "plausible_ranges": PLAUSIBLE_RANGES,
+        "preprocess": notes,
         "success_target": {"metric": "weighted_f1", "threshold": TARGET_WEIGHTED_F1},
         "model_selection": (
-            "The shipped model is whichever of the baseline and the search "
-            "had the higher cross-validated weighted F1. Holdout scores are reported after that choice."
+            "The shipped model is whichever of the baseline and the search had the "
+            "higher cross-validated weighted F1. The holdout is scored once, after "
+            "that choice."
         ),
-        "chosen_model": details["chosen_name"],
-        "preprocess": details["notes"],
-        "baseline_cv": details["baseline_cv"],
-        "baseline_holdout": details["baseline_holdout"],
-        "tuning": details["tune_info"],
-        "tuned_cv": details["tuned_cv"],
-        "tuned_holdout": details["tuned_holdout"],
-        "chosen_cv": details["chosen_cv"],
-        "chosen_holdout": details["chosen_holdout"],
-        "feature_importances": details["weights"],
+        "baseline_cv": baseline_cv,
+        "tuning": tuning,
+        "chosen_model": chosen_name,
+        "chosen_cv": chosen_cv,
+        "chosen_holdout": holdout,
+        "majority_class_holdout": majority_baseline(x_train, y_train, x_test, y_test),
+        "feature_importances": importances(chosen),
     }
-    (RESULTS_DIR / "metrics.json").write_text(
-        json.dumps(payload, indent=2), encoding="utf-8"
+
+    save_artifacts(chosen, encoder, metadata, models_dir)
+    results_dir.mkdir(parents=True, exist_ok=True)
+    (results_dir / "metrics.json").write_text(
+        json.dumps(metrics, indent=2) + "\n", encoding="utf-8"
+    )
+    (results_dir / "evaluation_summary.txt").write_text(
+        summarize(metrics), encoding="utf-8"
+    )
+    print(
+        f"Shipped {chosen_name} model. "
+        f"Cross-validated weighted F1 {chosen_cv['mean']:.3f}. "
+        f"Holdout weighted F1 {holdout['f1_weighted']:.3f}."
+    )
+    return 0
+
+
+def save_artifacts(
+    model: Any, encoder: Any, metadata: dict[str, Any], models_dir: Path
+) -> None:
+    models_dir.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, models_dir / MODEL_FILE, compress=3)
+    joblib.dump(encoder, models_dir / ENCODER_FILE)
+    (models_dir / METADATA_FILE).write_text(
+        json.dumps(metadata, indent=2) + "\n", encoding="utf-8"
     )
 
-    chosen = details["chosen_holdout"]
-    summary = RESULTS_DIR / "evaluation_summary.txt"
-    summary.write_text(
-        "\n".join(
-            [
-                "Maternal health risk triage",
-                "Ranks follow-up priority. Not a diagnosis.",
-                "",
-                f"Train / test rows: {details['n_train']} / {details['n_test']}",
-                f"Shipped model: {details['chosen_name']}",
-                f"Selection metric: cross-validated weighted F1 (target >= {TARGET_WEIGHTED_F1})",
-                "",
-                "Baseline cross-validation "
-                f"{details['baseline_cv']['mean']:.4f} +/- {details['baseline_cv']['std']:.4f}",
-                "Searched cross-validation "
-                f"{details['tuned_cv']['mean']:.4f} +/- {details['tuned_cv']['std']:.4f}",
-                "",
-                "Holdout of the shipped model (not used for selection)",
-                f"  accuracy:           {chosen['accuracy']:.4f}",
-                f"  precision weighted: {chosen['precision_weighted']:.4f}",
-                f"  recall weighted:    {chosen['recall_weighted']:.4f}",
-                f"  f1 weighted:        {chosen['f1_weighted']:.4f}",
-                f"  f1 macro:           {chosen['f1_macro']:.4f}",
-                "",
-                "Feature influence on the shipped forest",
-                *[
-                    f"  {name}: {weight:.4f}"
-                    for name, weight in details["weights"].items()
-                ],
-                "",
-            ]
-        ),
-        encoding="utf-8",
-    )
+
+def summarize(metrics: dict[str, Any]) -> str:
+    """Plain-text report of the cleaning, model choice, and holdout scores."""
+    notes = metrics["preprocess"]
+    holdout = metrics["chosen_holdout"]
+    report = holdout["classification_report"]
+    majority = metrics["majority_class_holdout"]
+    lines = [
+        "Maternal health risk triage. Not a diagnosis.",
+        "",
+        f"Raw rows: {notes['raw_rows']}",
+        f"  incomplete dropped:   {notes['incomplete_rows_dropped']}",
+        f"  implausible dropped:  {notes['implausible_rows_dropped']}",
+        f"  duplicates dropped:   {notes['duplicate_rows_dropped']}",
+        f"Rows kept: {notes['rows_after_cleaning']} "
+        f"(train {metrics['n_train']} / test {metrics['n_test']})",
+        "",
+        "Cross-validated weighted F1 (5 folds, training rows only)",
+        f"  baseline forest: {_mean_std(metrics['baseline_cv'])}",
+        f"  searched forest: {_mean_std(metrics['tuning']['cv'])}",
+        f"  shipped: {metrics['chosen_model']}",
+        "",
+        "Holdout, scored once after the choice",
+        f"  accuracy:    {holdout['accuracy']:.3f}",
+        f"  weighted F1: {holdout['f1_weighted']:.3f} "
+        f"(target {metrics['success_target']['threshold']:.2f})",
+        f"  macro F1:    {holdout['f1_macro']:.3f}",
+        f"  majority-class weighted F1, for scale: {majority['f1_weighted']:.3f}",
+        "",
+        f"  {'class':<10} {'precision':>9} {'recall':>7} {'f1':>6} {'rows':>5}",
+        *[
+            f"  {label:<10} {report[label]['precision']:>9.3f} "
+            f"{report[label]['recall']:>7.3f} {report[label]['f1-score']:>6.3f} "
+            f"{int(report[label]['support']):>5}"
+            for label in holdout["class_labels"]
+        ],
+        "",
+        "Feature importance (impurity-based)",
+        *[
+            f"  {name}: {weight:.3f}"
+            for name, weight in metrics["feature_importances"].items()
+        ],
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _mean_std(cv: dict[str, Any]) -> str:
+    return f"{cv['mean']:.3f} +/- {cv['std']:.3f}"

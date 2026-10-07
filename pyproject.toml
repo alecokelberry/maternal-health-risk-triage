@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "maternal-health-risk-triage"
-version = "1.0.0"
+version = "1.1.0"
 description = "Classify maternal health risk from six routine vitals. A portfolio demo, not a diagnostic device."
 readme = "README.md"
 requires-python = ">=3.11"

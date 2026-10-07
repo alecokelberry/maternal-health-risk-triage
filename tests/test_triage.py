@@ -13,12 +13,12 @@ class PreprocessTests(unittest.TestCase):
         raw = load_raw(RAW_CSV)
         cleaned, encoder, notes = preprocess(raw)
         self.assertEqual(notes["raw_rows"], 1014)
-        self.assertEqual(notes["rows_after_cleaning"], 1014)
+        self.assertEqual(notes["rows_after_cleaning"], 451)
         self.assertEqual(list(cleaned.columns[:6]), FEATURE_COLS)
         self.assertEqual(set(encoder.classes_), {"high risk", "low risk", "mid risk"})
-        self.assertEqual(notes["class_counts"]["low risk"], 406)
-        self.assertEqual(notes["class_counts"]["mid risk"], 336)
-        self.assertEqual(notes["class_counts"]["high risk"], 272)
+        self.assertEqual(notes["class_counts"]["low risk"], 233)
+        self.assertEqual(notes["class_counts"]["mid risk"], 106)
+        self.assertEqual(notes["class_counts"]["high risk"], 112)
 
     def test_blank_vital_is_dropped(self) -> None:
         raw = load_raw(RAW_CSV).head(5).copy()

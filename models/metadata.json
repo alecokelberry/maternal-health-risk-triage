@@ -12,7 +12,7 @@
     "low risk",
     "mid risk"
   ],
-  "chosen_model": "baseline",
+  "chosen_model": "tuned",
   "training_ranges": {
     "Age": {
       "min": 10.0,
@@ -35,9 +35,10 @@
       "max": 103.0
     },
     "HeartRate": {
-      "min": 7.0,
+      "min": 60.0,
       "max": 90.0
     }
   },
-  "random_state": 42
+  "random_state": 42,
+  "sklearn_version": "1.9.1"
 }
