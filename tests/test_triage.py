@@ -30,7 +30,7 @@ class PreprocessTests(unittest.TestCase):
 
 class PredictTests(unittest.TestCase):
     def test_known_high_risk_row_returns_a_label_and_probabilities(self) -> None:
-        label, probabilities, warnings = predict_row(
+        result = predict_row(
             {
                 "Age": 25,
                 "SystolicBP": 130,
@@ -40,9 +40,9 @@ class PredictTests(unittest.TestCase):
                 "HeartRate": 86,
             }
         )
-        self.assertIn(label, {"low risk", "mid risk", "high risk"})
-        self.assertAlmostEqual(sum(probabilities.values()), 1.0, places=5)
-        self.assertEqual(warnings, [])
+        self.assertIn(result.label, {"low risk", "mid risk", "high risk"})
+        self.assertAlmostEqual(sum(result.probabilities.values()), 1.0, places=5)
+        self.assertEqual(result.warnings, [])
 
     def test_missing_vital_is_an_error(self) -> None:
         with self.assertRaises(ValueError):
