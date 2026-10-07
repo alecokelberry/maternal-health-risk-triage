@@ -2,9 +2,14 @@
 venv/
 __pycache__/
 *.py[cod]
-*$py.class
-.Python
-.DS_Store
 *.egg-info/
+build/
+dist/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .ipynb_checkpoints/
+.DS_Store
+
+# Written by `python -m triage train`; regenerate instead of committing.
+data/processed/

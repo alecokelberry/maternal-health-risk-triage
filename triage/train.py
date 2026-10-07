@@ -46,7 +46,9 @@ def run() -> int:
     baseline = make_forest()
     baseline_cv = cross_validate(make_forest(), x_train, y_train)
     baseline.fit(x_train, y_train)
-    baseline_holdout = holdout_metrics(baseline, x_test, y_test, class_names, "baseline_holdout")
+    baseline_holdout = holdout_metrics(
+        baseline, x_test, y_test, class_names, "baseline_holdout"
+    )
 
     tuned, tune_info = tune(x_train, y_train)
     tuned_cv = {
@@ -111,7 +113,9 @@ def _save(**details) -> None:
         "training_ranges": details["ranges"],
         "random_state": RANDOM_STATE,
     }
-    (MODELS_DIR / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    (MODELS_DIR / "metadata.json").write_text(
+        json.dumps(metadata, indent=2), encoding="utf-8"
+    )
 
     payload = {
         "dataset": {
@@ -146,7 +150,9 @@ def _save(**details) -> None:
         "chosen_holdout": details["chosen_holdout"],
         "feature_importances": details["weights"],
     }
-    (RESULTS_DIR / "metrics.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    (RESULTS_DIR / "metrics.json").write_text(
+        json.dumps(payload, indent=2), encoding="utf-8"
+    )
 
     chosen = details["chosen_holdout"]
     summary = RESULTS_DIR / "evaluation_summary.txt"
@@ -173,7 +179,10 @@ def _save(**details) -> None:
                 f"  f1 macro:           {chosen['f1_macro']:.4f}",
                 "",
                 "Feature influence on the shipped forest",
-                *[f"  {name}: {weight:.4f}" for name, weight in details["weights"].items()],
+                *[
+                    f"  {name}: {weight:.4f}"
+                    for name, weight in details["weights"].items()
+                ],
                 "",
             ]
         ),

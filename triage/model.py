@@ -34,9 +34,13 @@ def make_forest(overrides: dict | None = None) -> RandomForestClassifier:
     return RandomForestClassifier(**params)
 
 
-def cross_validate(model: RandomForestClassifier, x_train: pd.DataFrame, y_train: pd.Series) -> dict:
+def cross_validate(
+    model: RandomForestClassifier, x_train: pd.DataFrame, y_train: pd.Series
+) -> dict:
     """Weighted F1 on the training rows only. The holdout stays unseen."""
-    folder = StratifiedKFold(n_splits=N_CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
+    folder = StratifiedKFold(
+        n_splits=N_CV_FOLDS, shuffle=True, random_state=RANDOM_STATE
+    )
     scores = cross_val_score(
         model,
         x_train,
@@ -54,7 +58,9 @@ def cross_validate(model: RandomForestClassifier, x_train: pd.DataFrame, y_train
     }
 
 
-def tune(x_train: pd.DataFrame, y_train: pd.Series) -> tuple[RandomForestClassifier, dict]:
+def tune(
+    x_train: pd.DataFrame, y_train: pd.Series
+) -> tuple[RandomForestClassifier, dict]:
     """Search tree settings by cross-validated weighted F1, then refit the winner."""
     search = RandomizedSearchCV(
         estimator=make_forest(),
@@ -68,7 +74,9 @@ def tune(x_train: pd.DataFrame, y_train: pd.Series) -> tuple[RandomForestClassif
         },
         n_iter=SEARCH_ITERATIONS,
         scoring="f1_weighted",
-        cv=StratifiedKFold(n_splits=N_CV_FOLDS, shuffle=True, random_state=RANDOM_STATE),
+        cv=StratifiedKFold(
+            n_splits=N_CV_FOLDS, shuffle=True, random_state=RANDOM_STATE
+        ),
         random_state=RANDOM_STATE,
         n_jobs=1,
         refit=True,
@@ -84,7 +92,9 @@ def tune(x_train: pd.DataFrame, y_train: pd.Series) -> tuple[RandomForestClassif
         "n_iter": SEARCH_ITERATIONS,
         "scoring": "f1_weighted",
         "cv_folds": N_CV_FOLDS,
-        "best_params": {key: _jsonable(value) for key, value in search.best_params_.items()},
+        "best_params": {
+            key: _jsonable(value) for key, value in search.best_params_.items()
+        },
         "best_cv_score_weighted_f1": float(search.best_score_),
         "best_fold_scores": fold_scores,
     }
@@ -100,7 +110,9 @@ def holdout_metrics(
 ) -> dict:
     predicted = model.predict(x_test)
     labels = list(range(len(class_names)))
-    weighted_f1 = float(f1_score(y_test, predicted, average="weighted", zero_division=0))
+    weighted_f1 = float(
+        f1_score(y_test, predicted, average="weighted", zero_division=0)
+    )
     return {
         "tag": tag,
         "accuracy": float(accuracy_score(y_test, predicted)),
@@ -111,7 +123,9 @@ def holdout_metrics(
             recall_score(y_test, predicted, average="weighted", zero_division=0)
         ),
         "f1_weighted": weighted_f1,
-        "f1_macro": float(f1_score(y_test, predicted, average="macro", zero_division=0)),
+        "f1_macro": float(
+            f1_score(y_test, predicted, average="macro", zero_division=0)
+        ),
         "classification_report": classification_report(
             y_test,
             predicted,

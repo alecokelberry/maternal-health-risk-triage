@@ -39,7 +39,9 @@ def preprocess(frame: pd.DataFrame) -> tuple[pd.DataFrame, LabelEncoder, dict]:
     """Coerce vitals to numbers, drop incomplete rows, and encode the risk label."""
     notes: dict = {
         "raw_rows": int(len(frame)),
-        "missing_before": {column: int(frame[column].isna().sum()) for column in frame.columns},
+        "missing_before": {
+            column: int(frame[column].isna().sum()) for column in frame.columns
+        },
     }
     work = frame.dropna(subset=FEATURE_COLS + [TARGET_COL]).copy()
     for column in FEATURE_COLS:
@@ -47,12 +49,16 @@ def preprocess(frame: pd.DataFrame) -> tuple[pd.DataFrame, LabelEncoder, dict]:
     work = work.dropna(subset=FEATURE_COLS)
     work[TARGET_COL] = work[TARGET_COL].astype(str).str.strip().str.lower()
     notes["rows_after_cleaning"] = int(len(work))
-    notes["class_counts"] = {str(k): int(v) for k, v in work[TARGET_COL].value_counts().items()}
+    notes["class_counts"] = {
+        str(k): int(v) for k, v in work[TARGET_COL].value_counts().items()
+    }
 
     encoder = LabelEncoder()
     work["RiskLevelEncoded"] = encoder.fit_transform(work[TARGET_COL])
     notes["labels"] = [str(label) for label in encoder.classes_]
-    cleaned = work[FEATURE_COLS + [TARGET_COL, "RiskLevelEncoded"]].reset_index(drop=True)
+    cleaned = work[FEATURE_COLS + [TARGET_COL, "RiskLevelEncoded"]].reset_index(
+        drop=True
+    )
     return cleaned, encoder, notes
 
 
@@ -80,7 +86,9 @@ def write_tables(
     encoder: LabelEncoder,
 ) -> None:
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
-    processed.to_csv(PROCESSED_DIR / "maternal_health_risk_preprocessed.csv", index=False)
+    processed.to_csv(
+        PROCESSED_DIR / "maternal_health_risk_preprocessed.csv", index=False
+    )
 
     def _side(features: pd.DataFrame, labels: pd.Series, name: str) -> None:
         table = features.copy()
@@ -95,6 +103,9 @@ def write_tables(
 def training_ranges(x_train: pd.DataFrame) -> dict[str, dict[str, float]]:
     """Min and max of each vital on the training rows, for a range warning at predict time."""
     return {
-        column: {"min": float(x_train[column].min()), "max": float(x_train[column].max())}
+        column: {
+            "min": float(x_train[column].min()),
+            "max": float(x_train[column].max()),
+        }
         for column in FEATURE_COLS
     }

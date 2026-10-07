@@ -18,7 +18,9 @@ def main(argv: list[str] | None = None) -> int:
     predict.add_argument("--systolic", type=float, required=True)
     predict.add_argument("--diastolic", type=float, required=True)
     predict.add_argument("--bs", type=float, required=True, help="Blood sugar, mmol/L")
-    predict.add_argument("--temp", type=float, required=True, help="Body temperature, Fahrenheit")
+    predict.add_argument(
+        "--temp", type=float, required=True, help="Body temperature, Fahrenheit"
+    )
     predict.add_argument("--heart-rate", type=float, required=True)
 
     args = parser.parse_args(argv)
@@ -43,5 +45,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"warning: {warning}", file=sys.stderr)
     ordered = sorted(probabilities.items(), key=lambda item: item[1], reverse=True)
     print(label)
-    print("  " + "  ".join(f"{name} {probability:.2f}" for name, probability in ordered))
+    print(
+        "  " + "  ".join(f"{name} {probability:.2f}" for name, probability in ordered)
+    )
     return 0
